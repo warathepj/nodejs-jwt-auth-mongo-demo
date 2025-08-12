@@ -248,7 +248,11 @@
                         } else {
                             alert('Sign in successful! Welcome back!');
                             localStorage.setItem('token', result.token); // Store the token
-                            window.location.href = '/profile'; // Redirect to profile page
+                            if (result.role === 'admin') {
+                                window.location.href = '/admin'; // Redirect to admin page
+                            } else {
+                                window.location.href = '/profile'; // Redirect to profile page
+                            }
                             form.reset(); // Clear the form
                         }
                     })

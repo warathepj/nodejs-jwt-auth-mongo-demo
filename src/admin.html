@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .error-message { color: red; text-align: center; margin-top: 20px; }
+        .loading-message { text-align: center; margin-top: 20px; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel - All Users</h1>
+        <div id="loading-message" class="loading-message">Loading users...</div>
+        <div id="error-message" class="error-message" style="display: none;"></div>
+        <table id="users-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                <!-- User data will be rendered here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const usersTableBody = document.getElementById('users-table-body');
+            const usersTable = document.getElementById('users-table');
+            const loadingMessage = document.getElementById('loading-message');
+            const errorMessage = document.getElementById('error-message');
+
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                errorMessage.textContent = 'You are not logged in or do not have access. Please sign in as an admin.';
+                errorMessage.style.display = 'block';
+                loadingMessage.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                loadingMessage.style.display = 'none';
+
+                if (response.ok) {
+                    const users = await response.json();
+                    if (users.length > 0) {
+                        users.forEach(user => {
+                            const row = usersTableBody.insertRow();
+                            row.insertCell().textContent = user.username;
+                            row.insertCell().textContent = user.email;
+                            row.insertCell().textContent = user.role;
+                        });
+                        usersTable.style.display = 'table';
+                    } else {
+                        errorMessage.textContent = 'No users found.';
+                        errorMessage.style.display = 'block';
+                    }
+                } else {
+                    const errorData = await response.json();
+                    errorMessage.textContent = `Error: ${errorData.error || response.statusText}`;
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                loadingMessage.style.display = 'none';
+                errorMessage.textContent = 'Failed to fetch user data. Please check your network connection.';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

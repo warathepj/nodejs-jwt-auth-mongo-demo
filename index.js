@@ -22,6 +22,10 @@ app.get('/signin', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'signin.html'));
 });
 
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'admin.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
@@ -49,9 +53,19 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token' });
-    req.user = decoded; // { id, username }
+    req.user = decoded; // { id, username, role }
     next();
   });
+}
+
+// middleware: authorize role
+function authorizeRole(role) {
+  return (req, res, next) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Access denied: Insufficient role' });
+    }
+    next();
+  };
 }
 
 // Register
@@ -86,8 +100,8 @@ app.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = createToken({ id: user._id, username: user.username });
-    res.json({ token, expiresIn: JWT_EXPIRES_IN });
+    const token = createToken({ id: user._id, username: user.username, role: user.role });
+    res.json({ token, expiresIn: JWT_EXPIRES_IN, role: user.role });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
@@ -97,6 +111,17 @@ app.post('/login', async (req, res) => {
 // Profile route (now serves HTML directly, client-side will fetch protected data)
 app.get('/profile', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'profile.html'));
+});
+
+// Admin route to get all user data (protected and role-based)
+app.get('/api/admin/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const users = await User.find().select('-password'); // Get all users, exclude passwords
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Protected route to get user profile data
