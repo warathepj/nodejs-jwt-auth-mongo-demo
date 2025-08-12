@@ -94,16 +94,9 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Protected route
-app.get('/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Profile route (now serves HTML directly, client-side will fetch protected data)
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'profile.html'));
 });
 
 app.listen(PORT, () => {

@@ -247,7 +247,8 @@
                             }
                         } else {
                             alert('Sign in successful! Welcome back!');
-                            // Optionally redirect or store token
+                            localStorage.setItem('token', result.token); // Store the token
+                            window.location.href = '/profile'; // Redirect to profile page
                             form.reset(); // Clear the form
                         }
                     })
