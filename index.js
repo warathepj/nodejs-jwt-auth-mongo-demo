@@ -3,11 +3,20 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const User = require('./models/User');
 
 const app = express();
 app.use(express.json());
+
+// Serve static files from the 'src' directory
+app.use(express.static(path.join(__dirname, 'src')));
+
+// Serve index.html for the root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'index.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
