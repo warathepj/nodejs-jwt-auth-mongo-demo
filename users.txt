@@ -1,3 +1,7 @@
 a
 a@gmail.com
 aaaaaa
+
+admin
+admin@gmail.com
+admin123

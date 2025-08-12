@@ -3,9 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Profile</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        h1 { text-align: center; color: #333; }
+        p { margin-bottom: 10px; }
+        strong { font-weight: bold; }
+        .error { color: red; text-align: center; }
+    </style>
 </head>
 <body>
-    profile
+    <div class="container">
+        <h1>User Profile</h1>
+        <p>Username: <strong id="username">Loading...</strong></p>
+        <p>Email: <strong id="email">Loading...</strong></p>
+        <p>Token Expires In: <strong id="countdown">Calculating...</strong></p>
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const usernameElement = document.getElementById('username');
+            const emailElement = document.getElementById('email');
+            const countdownElement = document.getElementById('countdown');
+            const errorMessageElement = document.getElementById('error-message');
+
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                errorMessageElement.textContent = 'No token found. Please log in.';
+                usernameElement.textContent = 'N/A';
+                emailElement.textContent = 'N/A';
+                countdownElement.textContent = 'N/A';
+                return;
+            }
+
+            // Decode JWT to get expiration time
+            let expirationTime;
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const decodedPayload = JSON.parse(atob(base64));
+                expirationTime = decodedPayload.exp * 1000; // Convert to milliseconds
+            } catch (e) {
+                errorMessageElement.textContent = 'Invalid token format.';
+                usernameElement.textContent = 'N/A';
+                emailElement.textContent = 'N/A';
+                countdownElement.textContent = 'Invalid';
+                return;
+            }
+
+            // Update countdown every second
+            const updateCountdown = () => {
+                const now = Date.now();
+                const timeLeft = expirationTime - now;
+
+                if (timeLeft <= 0) {
+                    countdownElement.textContent = 'Expired!';
+                    clearInterval(countdownInterval);
+                    // Optionally, redirect to login or show a re-login prompt
+                    errorMessageElement.textContent = 'Your session has expired. Please log in again.';
+                    usernameElement.textContent = 'N/A';
+                    emailElement.textContent = 'N/A';
+                    return;
+                }
+
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            };
+
+            const countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown(); // Initial call to display immediately
+
+            try {
+                const response = await fetch('/api/profile-data', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    usernameElement.textContent = data.username;
+                    emailElement.textContent = data.email || 'Not provided';
+                } else {
+                    const errorData = await response.json();
+                    errorMessageElement.textContent = `Error: ${errorData.error || 'Failed to fetch profile data'}`;
+                    usernameElement.textContent = 'N/A';
+                    emailElement.textContent = 'N/A';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                errorMessageElement.textContent = 'Network error or server unreachable.';
+                usernameElement.textContent = 'N/A';
+                emailElement.textContent = 'N/A';
+            }
+        });
+    </script>
 </body>
 </html>
