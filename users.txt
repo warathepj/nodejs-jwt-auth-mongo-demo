@@ -5,3 +5,7 @@ aaaaaa
 admin
 admin@gmail.com
 admin123
+
+rose
+rose@gmail.com
+bp9876
